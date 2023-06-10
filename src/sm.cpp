@@ -10,32 +10,38 @@
 #include "sm.h"
 #include <cfloat>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <string>
 
-// physical parameters 2023.6
-// #define ALPHAS 0.1179
-// #define MTPOLE 172.5
-// #define MW 80.377
-// #define MH 125.25
-#define ALPHAS 0.1181
-#define MTPOLE 173.1
+// physical parameters as of 2023.6
+#define DATE_LABEL "202306"
+#define ALPHAS 0.1179
+#define MTPOLE 172.5
 #define MW 80.377
-#define MH 125.09
+#define MH 125.25
+
+// physical parameters used for [1803.03902]
+// just for check
+// #define ALPHAS 0.1181
+// #define MTPOLE 173.1
+// #define MW 80.377
+// #define MH 125.09
 
 using namespace std;
 
-int main(int argc, char **argv)
+double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, double arg_mh, const string &arg_ofprefix = "")
 {
   // SM parameters @ Mt
+  // use three-loop RGE by default
   StandardModel sm;
   QedQcd qq;
-  qq.setAlphas(ALPHAS);
-  qq.setPoleMt(MTPOLE);
-  qq.setMW(MW);
+  qq.setAlphas(arg_alphas);
+  qq.setPoleMt(arg_mtpole);
+  qq.setMW(arg_mw);
   qq.toMt();
-  // sm.flagThreeLoop(false);
-  sm.matchQedQcd(qq, MW, MTPOLE, MH, ALPHAS);
+  sm.matchQedQcd(qq, arg_mw, arg_mtpole, arg_mh, arg_alphas);
 
   // RGE flow settings
   int npts = 1000;
@@ -67,15 +73,12 @@ int main(int argc, char **argv)
       nF = i;
   }
 
-  // output RGE flow
-  ofstream ofs("output/RGEFlow.dat");
-  for (int i = 0; i <= npts; ++i)
-  {
-    ofs << vec_mu[i] << "\t" << vec_lambda[i] << endl;
-  }
+  // absolute stability
+  if (nI == -1)
+    return -DBL_MAX;
 
   // decay rate calculation
-  int n;
+  int n, mI = -1, mF = -1;
   vector<pair<double, double>> lndgam(nF - nI);
   for (int i = 0; i < nF - nI; ++i)
   {
@@ -96,21 +99,82 @@ int main(int argc, char **argv)
     bool pertgW = (fabs(2 * mlnAgW / B0) < 0.8);
     bool pertgZ = (fabs(mlnAgZ / B0) < 0.8);
     if (pert1 && perth && pertt && pertgW && pertgZ)
+    {
       lndgamdRinv = -B0 - B1 + 4 * log(vec_mu[n]);
+      if (mI == -1)
+        mI = i;
+    }
     else
+    {
       lndgamdRinv = -DBL_MAX;
+      if (mI != -1 && mF == -1)
+        mF = i - 1;
+    }
     lndgam[i] = pair<double, double>(lnRinv, lndgamdRinv);
   }
-  cout << vec_mu[nI] << "\t" << vec_mu[nF] << "\t" << endl;
-  double lngamma = Elvas::getLnGamma(lndgam, log(8.5e10), log(3e28));
-  cout << lngamma / log(10) + (log10(1.83) + 164) << endl;
 
-  // output differential rate
-  ofstream ofs2("output/differential_rate.dat");
-  for (int i = 0; i < nF - nI; ++i)
+  // absolute stability
+  // (near criticality such that no integration range obtained)
+  if (mI == -1)
+    return -DBL_MAX;
+
+  double lngamma = Elvas::getLnGamma(lndgam, log(vec_mu[mI + nI]), log(vec_mu[mF + nI]));
+
+  // save RGE data
+  if (arg_ofprefix != "")
   {
-    n = i + nI;
-    ofs2 << exp(lndgam[i].first) << "\t" << lndgam[i].second << endl;
+    // RGE flow
+    ofstream ofs("output/" + arg_ofprefix + "_RGEFlow.dat");
+    ofs << scientific << setprecision(6);
+    for (int i = 0; i <= npts; ++i)
+    {
+      ofs << vec_mu[i] << "\t" << vec_lambda[i] << endl;
+    }
+
+    // output differential rate
+    ofstream ofs2("output/" + arg_ofprefix + "_differential_rate.dat");
+    ofs2 << scientific << setprecision(6);
+    for (int i = 0; i < nF - nI; ++i)
+    {
+      n = i + nI;
+      ofs2 << exp(lndgam[i].first) << "\t" << lndgam[i].second << endl;
+    }
+  }
+
+  // log10(gamma / Gyr / Gpc^3)
+  double log10GeV4inGyrGpc3 = log10(1.83) + 164;
+  return lngamma / log(10) + log10GeV4inGyrGpc3;
+}
+
+int main(int argc, char **argv)
+{
+  // current central value
+  calcLog10gamma(ALPHAS, MTPOLE, MW, MH, DATE_LABEL);
+
+  // ----- contour plot -----
+  // grid setting
+  int nPts = 40;
+  double mt_min = 170.;
+  double mt_max = 180.;
+  double mh_min = 120.;
+  double mh_max = 130.;
+  double dmt = (mt_max - mt_min) / nPts;
+  double dmh = (mh_max - mh_min) / nPts;
+
+  // run and save
+  ofstream ofs("output/" + string(DATE_LABEL) + ".dat");
+  ofs << scientific << setprecision(6);
+  double mt, mh, log10gamma;
+  for (int i = 0; i <= nPts; ++i)
+  {
+    mt = mt_min + dmt * i;
+    cout << "start running mt = " << mt << " GeV..." << endl;
+    for (int j = 0; j <= nPts; ++j)
+    {
+      mh = mh_min + dmh * j;
+      log10gamma = calcLog10gamma(ALPHAS, mt, MW, mh);
+      ofs << mt << "\t" << mh << "\t" << log10gamma << endl;
+    }
   }
 
   return 0;
