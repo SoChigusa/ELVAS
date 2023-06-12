@@ -18,6 +18,7 @@
 // physical parameters as of 2023.6
 #define DATE_LABEL "202306"
 #define ALPHAS 0.1179
+#define ALPHAS_ERR 0.0009
 #define MTPOLE 172.5
 #define MW 80.377
 #define MH 125.25
@@ -42,7 +43,7 @@ double fakeRateAbsoluteStability(double mh, double mt)
   // rate varies from norm -- 3*norm
   // double norm = -1e4;
   // return norm * (1 + (mh - MH_MIN) / (MH_MAX - MH_MIN) + (MT_MAX - mt) / (MT_MAX - MT_MIN));
-  return -1e10;
+  return -DBL_MAX;
 }
 
 double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, double arg_mh, const string &arg_ofprefix = "")
@@ -181,14 +182,15 @@ int main(int argc, char **argv)
 
   // ----- contour plot -----
   // grid setting
-  int nPts = 40;
+  int nPts = 300;
   double dmt = (MT_MAX - MT_MIN) / nPts;
   double dmh = (MH_MAX - MH_MIN) / nPts;
 
   // run and save
   ofstream ofs("output/" + string(DATE_LABEL) + ".dat");
   ofs << scientific << setprecision(6);
-  double mt, mh, log10gamma;
+  double mt, mh;
+  vector<double> log10gamma(3);
   for (int i = 0; i <= nPts; ++i)
   {
     mt = MT_MIN + dmt * i;
@@ -196,8 +198,10 @@ int main(int argc, char **argv)
     for (int j = 0; j <= nPts; ++j)
     {
       mh = MH_MIN + dmh * j;
-      log10gamma = calcLog10gamma(ALPHAS, mt, MW, mh);
-      ofs << mt << "\t" << mh << "\t" << log10gamma << endl;
+      log10gamma[0] = calcLog10gamma(ALPHAS, mt, MW, mh);
+      log10gamma[1] = calcLog10gamma(ALPHAS + ALPHAS_ERR, mt, MW, mh);
+      log10gamma[2] = calcLog10gamma(ALPHAS - ALPHAS_ERR, mt, MW, mh);
+      ofs << mt << "\t" << mh << "\t" << log10gamma[0] << "\t" << log10gamma[1] << "\t" << log10gamma[2] << endl;
     }
   }
 
