@@ -29,7 +29,21 @@
 // #define MW 80.377
 // #define MH 125.09
 
+// contour plot settings
+#define MT_MIN 170.
+#define MT_MAX 180.
+#define MH_MIN 120.
+#define MH_MAX 130.
+
 using namespace std;
+
+double fakeRateAbsoluteStability(double mh, double mt)
+{
+  // rate varies from norm -- 3*norm
+  // double norm = -1e4;
+  // return norm * (1 + (mh - MH_MIN) / (MH_MAX - MH_MIN) + (MT_MAX - mt) / (MT_MAX - MT_MIN));
+  return -1e10;
+}
 
 double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, double arg_mh, const string &arg_ofprefix = "")
 {
@@ -75,11 +89,12 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 
   // absolute stability
   if (nI == -1)
-    return -DBL_MAX;
+    return fakeRateAbsoluteStability(arg_mh, arg_mtpole);
 
   // decay rate calculation
-  int n, mI = -1, mF = -1;
-  vector<pair<double, double>> lndgam(nF - nI);
+  int n;
+  muI = muF = 0.;
+  vector<pair<double, double>> lndgam;
   for (int i = 0; i < nF - nI; ++i)
   {
     n = i + nI;
@@ -93,32 +108,43 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 
     double lndgamdRinv;
     double lnRinv = log(vec_mu[n]); // take mu = 1/R
-    bool pert1 = (fabs(B1 / B0) < 0.8);
-    bool perth = (fabs(mlnAh / B0) < 0.8);
-    bool pertt = (fabs(3 * mlnAt / B0) < 0.8);
-    bool pertgW = (fabs(2 * mlnAgW / B0) < 0.8);
-    bool pertgZ = (fabs(mlnAgZ / B0) < 0.8);
+    double phiC = vec_mu[n] * sqrt(8 / lambdaAbs);
+    double cutoff_phiC = 2.4e18;
+    double thresh = 0.8;
+    bool pert1 = (fabs(B1 / B0) < thresh);
+    bool perth = (fabs(mlnAh / B0) < thresh);
+    bool pertt = (fabs(3 * mlnAt / B0) < thresh);
+    bool pertgW = (fabs(2 * mlnAgW / B0) < thresh);
+    bool pertgZ = (fabs(mlnAgZ / B0) < thresh);
     if (pert1 && perth && pertt && pertgW && pertgZ)
     {
-      lndgamdRinv = -B0 - B1 + 4 * log(vec_mu[n]);
-      if (mI == -1)
-        mI = i;
+      // cutoff the integration at \bar{phi}_C = Mpl
+      if (phiC < cutoff_phiC)
+      {
+        lndgamdRinv = -B0 - B1 + 4 * log(vec_mu[n]);
+        lndgam.emplace_back(pair<double, double>(lnRinv, lndgamdRinv));
+
+        if (muI == 0.)
+          muI = vec_mu[n];
+      }
+      else if (muF == 0.)
+        muF = vec_mu[n - 1];
     }
-    else
-    {
-      lndgamdRinv = -DBL_MAX;
-      if (mI != -1 && mF == -1)
-        mF = i - 1;
-    }
-    lndgam[i] = pair<double, double>(lnRinv, lndgamdRinv);
   }
 
   // absolute stability
   // (near criticality such that no integration range obtained)
-  if (mI == -1)
-    return -DBL_MAX;
+  if (lndgam.size() < 3)
+    return fakeRateAbsoluteStability(arg_mh, arg_mtpole);
 
-  double lngamma = Elvas::getLnGamma(lndgam, log(vec_mu[mI + nI]), log(vec_mu[mF + nI]));
+  // for debug of integration
+  // cout << nI << "\t" << nF << "\t" << muI << "\t" << muF << endl;
+  // cout << exp(lndgam[0].first) << "\t" << lndgam[0].second << endl;
+  // cout << exp(lndgam[-1].first) << "\t" << lndgam[-1].second << endl;
+
+  // integration
+  // +- 3 to mI/mF to ensure the smooth interpolation within the range
+  double lngamma = Elvas::getLnGamma(lndgam, log(muI), log(muF));
 
   // save RGE data
   if (arg_ofprefix != "")
@@ -134,10 +160,9 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
     // output differential rate
     ofstream ofs2("output/" + arg_ofprefix + "_differential_rate.dat");
     ofs2 << scientific << setprecision(6);
-    for (int i = 0; i < nF - nI; ++i)
+    for (auto itr = lndgam.begin(); itr != lndgam.end(); ++itr)
     {
-      n = i + nI;
-      ofs2 << exp(lndgam[i].first) << "\t" << lndgam[i].second << endl;
+      ofs2 << exp(itr->first) << "\t" << itr->second << endl;
     }
   }
 
@@ -151,15 +176,14 @@ int main(int argc, char **argv)
   // current central value
   calcLog10gamma(ALPHAS, MTPOLE, MW, MH, DATE_LABEL);
 
+  // for point specific debug
+  // cout << calcLog10gamma(ALPHAS, 173.50, MW, 129.75, DATE_LABEL) << endl;
+
   // ----- contour plot -----
   // grid setting
   int nPts = 40;
-  double mt_min = 170.;
-  double mt_max = 180.;
-  double mh_min = 120.;
-  double mh_max = 130.;
-  double dmt = (mt_max - mt_min) / nPts;
-  double dmh = (mh_max - mh_min) / nPts;
+  double dmt = (MT_MAX - MT_MIN) / nPts;
+  double dmh = (MH_MAX - MH_MIN) / nPts;
 
   // run and save
   ofstream ofs("output/" + string(DATE_LABEL) + ".dat");
@@ -167,11 +191,11 @@ int main(int argc, char **argv)
   double mt, mh, log10gamma;
   for (int i = 0; i <= nPts; ++i)
   {
-    mt = mt_min + dmt * i;
+    mt = MT_MIN + dmt * i;
     cout << "start running mt = " << mt << " GeV..." << endl;
     for (int j = 0; j <= nPts; ++j)
     {
-      mh = mh_min + dmh * j;
+      mh = MH_MIN + dmh * j;
       log10gamma = calcLog10gamma(ALPHAS, mt, MW, mh);
       ofs << mt << "\t" << mh << "\t" << log10gamma << endl;
     }
