@@ -19,7 +19,7 @@
 #define DATE_LABEL "202306"
 #define ALPHAS 0.1179
 #define ALPHAS_ERR 0.0009
-#define MTPOLE 172.5
+#define MTPOLE 172.69 // MC mass
 #define MW 80.377
 #define MH 125.25
 
