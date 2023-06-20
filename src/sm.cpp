@@ -16,24 +16,24 @@
 #include <string>
 
 // physical parameters as of 2023.6
-#define DATE_LABEL "202306"
-#define ALPHAS 0.1179
-#define ALPHAS_ERR 0.0009
-#define MTPOLE 172.69 // MC mass
-#define MT_ERR 0.3
-#define MW 80.377
-#define MH 125.25
-#define MH_ERR 0.17
+// #define DATE_LABEL "202306"
+// #define ALPHAS 0.1179
+// #define ALPHAS_ERR 0.0009
+// #define MTPOLE 172.69 // MC mass
+// #define MT_ERR 0.3
+// #define MW 80.377
+// #define MH 125.25
+// #define MH_ERR 0.17
 
 // physical parameters used for [1803.03902]
-// #define DATE_LABEL "201803"
-// #define ALPHAS 0.1181
-// #define ALPHAS_ERR 0.0011
-// #define MTPOLE 173.1 // MC mass
-// #define MT_ERR 0.6
-// #define MW 80.379
-// #define MH 125.09
-// #define MH_ERR 0.24
+#define DATE_LABEL "201803"
+#define ALPHAS 0.1181
+#define ALPHAS_ERR 0.0011
+#define MTPOLE 173.1 // MC mass
+#define MT_ERR 0.6
+#define MW 80.379
+#define MH 125.09
+#define MH_ERR 0.24
 
 // contour plot settings
 #define MT_MIN 170.
