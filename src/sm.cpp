@@ -20,15 +20,20 @@
 #define ALPHAS 0.1179
 #define ALPHAS_ERR 0.0009
 #define MTPOLE 172.69 // MC mass
+#define MT_ERR 0.3
 #define MW 80.377
 #define MH 125.25
+#define MH_ERR 0.17
 
 // physical parameters used for [1803.03902]
-// just for check
+// #define DATE_LABEL "201803"
 // #define ALPHAS 0.1181
-// #define MTPOLE 173.1
-// #define MW 80.377
+// #define ALPHAS_ERR 0.0011
+// #define MTPOLE 173.1 // MC mass
+// #define MT_ERR 0.6
+// #define MW 80.379
 // #define MH 125.09
+// #define MH_ERR 0.24
 
 // contour plot settings
 #define MT_MIN 170.
@@ -174,8 +179,18 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 
 int main(int argc, char **argv)
 {
-  // current central value
-  calcLog10gamma(ALPHAS, MTPOLE, MW, MH, DATE_LABEL);
+  // current value and error bars
+  double center = calcLog10gamma(ALPHAS, MTPOLE, MW, MH, DATE_LABEL);
+  double mh_plus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH + MH_ERR, DATE_LABEL);
+  double mh_minus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH - MH_ERR, DATE_LABEL);
+  double mt_plus = calcLog10gamma(ALPHAS, MTPOLE + MT_ERR, MW, MH, DATE_LABEL);
+  double mt_minus = calcLog10gamma(ALPHAS, MTPOLE - MT_ERR, MW, MH, DATE_LABEL);
+  double alphas_plus = calcLog10gamma(ALPHAS + ALPHAS_ERR, MTPOLE, MW, MH, DATE_LABEL);
+  double alphas_minus = calcLog10gamma(ALPHAS - ALPHAS_ERR, MTPOLE, MW, MH, DATE_LABEL);
+  cout << "log_10 gamma = " << int(center)
+       << " +" << int(mh_minus - center) << "-" << int(center - mh_plus)
+       << " +" << int(mt_plus - center) << "-" << int(center - mt_minus)
+       << " +" << int(alphas_minus - center) << "-" << int(center - alphas_plus) << endl;
 
   // for point specific debug
   // cout << calcLog10gamma(ALPHAS, 173.50, MW, 129.75, DATE_LABEL) << endl;
