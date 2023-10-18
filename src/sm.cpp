@@ -16,7 +16,7 @@
 #include <string>
 
 // physical parameters as of 2023.6
-#define DATE_LABEL "202306"
+#define DATE_LABEL "2306"
 #define ALPHAS 0.1179
 #define ALPHAS_ERR 0.0009
 #define MTPOLE 172.69 // MC mass
@@ -26,7 +26,7 @@
 #define MH_ERR 0.17
 
 // physical parameters used for [1803.03902]
-// #define DATE_LABEL "201803"
+// #define DATE_LABEL "1803"
 // #define ALPHAS 0.1181
 // #define ALPHAS_ERR 0.0011
 // #define MTPOLE 173.1 // MC mass
