@@ -93,6 +93,25 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
       nF = i;
   }
 
+  // save RGE data
+  if (arg_save)
+  {
+    // RGE flow
+    for (int i = 0; i <= npts; ++i)
+    {
+      // {Q, g2, g1, yt, yb, lambda}
+      arg_ofs << vec_mu[i] << "\t" << vec_g2[i] << "\t" << vec_g1[i] << "\t" << vec_yt[i] << "\t" << vec_yb[i] << "\t" << vec_lambda[i] << endl;
+    }
+
+    // output differential rate
+    // ofstream ofs2("output/" + arg_ofprefix + "_differential_rate.dat");
+    // ofs2 << scientific << setprecision(6);
+    // for (auto itr = lndgam.begin(); itr != lndgam.end(); ++itr)
+    // {
+    //   ofs2 << exp(itr->first) << "\t" << itr->second << endl;
+    // }
+  }
+
   // absolute stability
   if (nI == -1)
     return fakeRateAbsoluteStability(arg_mh, arg_mtpole);
@@ -140,6 +159,7 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 
   // absolute stability
   // (near criticality such that no integration range obtained)
+  std::cout << arg_mh << "\t" << arg_mtpole << "\t" << lndgam.size() << endl;
   if (lndgam.size() < 3)
     return fakeRateAbsoluteStability(arg_mh, arg_mtpole);
 
@@ -151,25 +171,6 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
   // integration
   // +- 3 to mI/mF to ensure the smooth interpolation within the range
   double lngamma = Elvas::getLnGamma(lndgam, log(muI), log(muF));
-
-  // save RGE data
-  if (arg_save)
-  {
-    // RGE flow
-    for (int i = 0; i <= npts; ++i)
-    {
-      // {Q, g2, g1, yt, yb, lambda}
-      arg_ofs << vec_mu[i] << "\t" << vec_g2[i] << "\t" << vec_g1[i] << "\t" << vec_yt[i] << "\t" << vec_yb[i] << "\t" << vec_lambda[i] << endl;
-    }
-
-    // output differential rate
-    // ofstream ofs2("output/" + arg_ofprefix + "_differential_rate.dat");
-    // ofs2 << scientific << setprecision(6);
-    // for (auto itr = lndgam.begin(); itr != lndgam.end(); ++itr)
-    // {
-    //   ofs2 << exp(itr->first) << "\t" << itr->second << endl;
-    // }
-  }
 
   // log10(gamma / Gyr / Gpc^3)
   double log10GeV4inGyrGpc3 = log10(1.83) + 164;
