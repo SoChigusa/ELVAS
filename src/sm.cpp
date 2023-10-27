@@ -16,24 +16,26 @@
 #include <string>
 
 // physical parameters as of 2023.6
-#define DATE_LABEL "2306"
-#define ALPHAS 0.1179
-#define ALPHAS_ERR 0.0009
-#define MTPOLE 172.69 // MC mass
-#define MT_ERR 0.3
-#define MW 80.377
-#define MH 125.25
-#define MH_ERR 0.17
+// #define DATE_LABEL "2306"
+// #define ALPHAS 0.1179
+// #define ALPHAS_ERR 0.0009
+// #define MTPOLE 172.69 // MC mass
+// #define MT_ERR 0.3
+// #define MW 80.377
+// #define MH 125.25
+// #define MH_ERR 0.17
+// int nPts = 100;
 
 // physical parameters used for [1803.03902]
-// #define DATE_LABEL "1803"
-// #define ALPHAS 0.1181
-// #define ALPHAS_ERR 0.0011
-// #define MTPOLE 173.1 // MC mass
-// #define MT_ERR 0.6
-// #define MW 80.379
-// #define MH 125.09
-// #define MH_ERR 0.24
+#define DATE_LABEL "1803"
+#define ALPHAS 0.1181
+#define ALPHAS_ERR 0.0011
+#define MTPOLE 173.1 // MC mass
+#define MT_ERR 0.6
+#define MW 80.379
+#define MH 125.09
+#define MH_ERR 0.24
+int nPts = 50;
 
 // contour plot settings
 #define MT_MIN 170.
@@ -159,7 +161,6 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 
   // absolute stability
   // (near criticality such that no integration range obtained)
-  std::cout << arg_mh << "\t" << arg_mtpole << "\t" << lndgam.size() << endl;
   if (lndgam.size() < 3)
     return fakeRateAbsoluteStability(arg_mh, arg_mtpole);
 
@@ -203,7 +204,6 @@ int main(int argc, char **argv)
 
   // ----- contour plot -----
   // grid setting
-  int nPts = 100;
   double dmt = (MT_MAX - MT_MIN) / nPts;
   double dmh = (MH_MAX - MH_MIN) / nPts;
 
