@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../RGEFlow"
+		},
+		{
+			"path": "../../papers/smewvac2023"
 		}
 	],
 	"settings": {
