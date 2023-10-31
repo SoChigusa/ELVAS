@@ -16,26 +16,26 @@
 #include <string>
 
 // physical parameters as of 2023.6
-// #define DATE_LABEL "2306"
-// #define ALPHAS 0.1179
-// #define ALPHAS_ERR 0.0009
-// #define MTPOLE 172.69 // MC mass
-// #define MT_ERR 0.3
-// #define MW 80.377
-// #define MH 125.25
-// #define MH_ERR 0.17
-// int nPts = 100;
+#define DATE_LABEL "2306"
+#define ALPHAS 0.1179
+#define ALPHAS_ERR 0.0009
+#define MTPOLE 172.69 // MC mass
+#define MT_ERR 0.3
+#define MW 80.377
+#define MH 125.25
+#define MH_ERR 0.17
+int nPts = 100;
 
-// physical parameters used for [1803.03902]
-#define DATE_LABEL "1803"
-#define ALPHAS 0.1181
-#define ALPHAS_ERR 0.0011
-#define MTPOLE 173.1 // MC mass
-#define MT_ERR 0.6
-#define MW 80.379
-#define MH 125.09
-#define MH_ERR 0.24
-int nPts = 50;
+// // physical parameters used for [1803.03902]
+// #define DATE_LABEL "1803"
+// #define ALPHAS 0.1181
+// #define ALPHAS_ERR 0.0011
+// #define MTPOLE 173.1 // MC mass
+// #define MT_ERR 0.6
+// #define MW 80.379
+// #define MH 125.09
+// #define MH_ERR 0.24
+// int nPts = 50;
 
 // contour plot settings
 #define MT_MIN 170.
@@ -98,12 +98,20 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
   // save RGE data
   if (arg_save)
   {
+    arg_ofs << scientific << setprecision(7);
+
+    // ELVAS input header
+    arg_ofs << "[DATASET] (" << arg_mh << " " << arg_mtpole << ")" << endl;
+
     // RGE flow
     for (int i = 0; i <= npts; ++i)
     {
       // {Q, g2, g1, yt, yb, lambda}
       arg_ofs << vec_mu[i] << "\t" << vec_g2[i] << "\t" << vec_g1[i] << "\t" << vec_yt[i] << "\t" << vec_yb[i] << "\t" << vec_lambda[i] << endl;
     }
+
+    // ELVAS input footer
+    arg_ofs << endl;
 
     // output differential rate
     // ofstream ofs2("output/" + arg_ofprefix + "_differential_rate.dat");
@@ -187,13 +195,14 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 int main(int argc, char **argv)
 {
   // current value and error bars
-  double center = calcLog10gamma(ALPHAS, MTPOLE, MW, MH);
-  double mh_plus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH + MH_ERR);
-  double mh_minus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH - MH_ERR);
-  double mt_plus = calcLog10gamma(ALPHAS, MTPOLE + MT_ERR, MW, MH);
-  double mt_minus = calcLog10gamma(ALPHAS, MTPOLE - MT_ERR, MW, MH);
-  double alphas_plus = calcLog10gamma(ALPHAS + ALPHAS_ERR, MTPOLE, MW, MH);
-  double alphas_minus = calcLog10gamma(ALPHAS - ALPHAS_ERR, MTPOLE, MW, MH);
+  ofstream ofs_center_ELVAS("output/" + string(DATE_LABEL) + "_center_ELVAS_input.dat");
+  double center = calcLog10gamma(ALPHAS, MTPOLE, MW, MH, ofs_center_ELVAS);
+  double mh_plus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH + MH_ERR, ofs_center_ELVAS);
+  double mh_minus = calcLog10gamma(ALPHAS, MTPOLE, MW, MH - MH_ERR, ofs_center_ELVAS);
+  double mt_plus = calcLog10gamma(ALPHAS, MTPOLE + MT_ERR, MW, MH, ofs_center_ELVAS);
+  double mt_minus = calcLog10gamma(ALPHAS, MTPOLE - MT_ERR, MW, MH, ofs_center_ELVAS);
+  double alphas_plus = calcLog10gamma(ALPHAS + ALPHAS_ERR, MTPOLE, MW, MH, ofs_center_ELVAS);
+  double alphas_minus = calcLog10gamma(ALPHAS - ALPHAS_ERR, MTPOLE, MW, MH, ofs_center_ELVAS);
   cout << "log_10 gamma = " << int(center)
        << " +" << int(mh_minus - center) << "-" << int(center - mh_plus)
        << " +" << int(mt_plus - center) << "-" << int(center - mt_minus)
@@ -213,9 +222,6 @@ int main(int argc, char **argv)
   ofstream ofs_ELVAS_alphap1s("output/" + string(DATE_LABEL) + "_alphap1s_ELVAS_input.dat");
   ofstream ofs_ELVAS_alpham1s("output/" + string(DATE_LABEL) + "_alpham1s_ELVAS_input.dat");
   ofs << scientific << setprecision(7);
-  ofs_ELVAS << scientific << setprecision(7);
-  ofs_ELVAS_alphap1s << scientific << setprecision(7);
-  ofs_ELVAS_alpham1s << scientific << setprecision(7);
   double mt, mh;
   vector<double> log10gamma(3);
   for (int i = 0; i <= nPts; ++i)
@@ -226,21 +232,11 @@ int main(int argc, char **argv)
     {
       mh = MH_MIN + dmh * j;
 
-      // ELVAS input headers
-      ofs_ELVAS << "[DATASET] (" << mh << " " << mt << ")" << endl;
-      ofs_ELVAS_alphap1s << "[DATASET] (" << mh << " " << mt << ")" << endl;
-      ofs_ELVAS_alpham1s << "[DATASET] (" << mh << " " << mt << ")" << endl;
-
       // calculate decay rate
       log10gamma[0] = calcLog10gamma(ALPHAS, mt, MW, mh, ofs_ELVAS);
       log10gamma[1] = calcLog10gamma(ALPHAS + ALPHAS_ERR, mt, MW, mh, ofs_ELVAS_alphap1s);
       log10gamma[2] = calcLog10gamma(ALPHAS - ALPHAS_ERR, mt, MW, mh, ofs_ELVAS_alpham1s);
       ofs << mt << "\t" << mh << "\t" << log10gamma[0] << "\t" << log10gamma[1] << "\t" << log10gamma[2] << endl;
-
-      // ELVAS input footers
-      ofs_ELVAS << endl;
-      ofs_ELVAS_alphap1s << endl;
-      ofs_ELVAS_alpham1s << endl;
     }
   }
 
