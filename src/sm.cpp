@@ -37,6 +37,17 @@ int nPts = 100;
 // #define MH_ERR 0.24
 // int nPts = 50;
 
+// // physical parameters used for [1707.09301]
+// #define DATE_LABEL "1707"
+// #define ALPHAS 0.1181
+// #define ALPHAS_ERR 0.0011
+// #define MTPOLE 173.1 // MC mass
+// #define MT_ERR 1.1
+// #define MW 80.379
+// #define MH 125.09
+// #define MH_ERR 0.24
+// int nPts = 50;
+
 // contour plot settings
 #define MT_MIN 170.
 #define MT_MAX 180.
