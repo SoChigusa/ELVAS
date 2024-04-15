@@ -65,7 +65,7 @@ double fakeRateAbsoluteStability(double mh, double mt)
 }
 
 double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, double arg_mh,
-                      ofstream &arg_ofs, bool arg_save = true)
+                      ofstream &arg_ofs, int arg_save = 1, bool arg_threeloop = true)
 {
   // SM parameters @ Mt
   // use three-loop RGE by default
@@ -76,12 +76,14 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
   qq.setMW(arg_mw);
   qq.toMt();
   sm.matchQedQcd(qq, arg_mw, arg_mtpole, arg_mh, arg_alphas);
+  sm.flagThreeLoop(arg_threeloop);
 
   // RGE flow settings
-  int npts = 189; // just a convention
-  vector<double> vec_mu(npts + 1), vec_lambda(npts + 1), vec_yt(npts + 1), vec_yb(npts + 1), vec_g2(npts + 1), vec_g1(npts + 1);
-  double muI = 240.;          // just a convention
-  double muF = 1.5142976e+40; // just a convention
+  int npts = 189;                                                                                                                                                   // just a convention
+  vector<double> vec_mu(npts + 1), vec_lambda(npts + 1), vec_yt(npts + 1), vec_yb(npts + 1), vec_g2(npts + 1), vec_g1(npts + 1);                                    // those used for gamma
+  vector<double> vec_g3(npts + 1), vec_yc(npts + 1), vec_ys(npts + 1), vec_yu(npts + 1), vec_yd(npts + 1), vec_ytau(npts + 1), vec_ymu(npts + 1), vec_ye(npts + 1); // those used only for RGE
+  double muI = 240.;                                                                                                                                                // just a convention
+  double muF = 1.5142976e+40;                                                                                                                                       // just a convention
   double logmuI = log(muI);
   double logmuF = log(muF);
   double dlogmu = (logmuF - logmuI) / npts;
@@ -98,6 +100,14 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
     vec_lambda[i] = sm.displayLambda();
     vec_yt[i] = sm.displayYukawaElement(yukawaID::YU, 3, 3);
     vec_yb[i] = sm.displayYukawaElement(yukawaID::YD, 3, 3);
+    vec_yc[i] = sm.displayYukawaElement(yukawaID::YU, 2, 2);
+    vec_ys[i] = sm.displayYukawaElement(yukawaID::YD, 2, 2);
+    vec_yu[i] = sm.displayYukawaElement(yukawaID::YU, 1, 1);
+    vec_yd[i] = sm.displayYukawaElement(yukawaID::YD, 1, 1);
+    vec_ytau[i] = sm.displayYukawaElement(yukawaID::YE, 3, 3);
+    vec_ymu[i] = sm.displayYukawaElement(yukawaID::YE, 2, 2);
+    vec_ye[i] = sm.displayYukawaElement(yukawaID::YE, 1, 1);
+    vec_g3[i] = sm.displayGaugeElement(3);
     vec_g2[i] = sm.displayGaugeElement(2);
     vec_g1[i] = sm.displayGaugeElement(1);
     if (nI == -1 && sm.displayLambda() < 0)
@@ -106,8 +116,8 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
       nF = i;
   }
 
-  // save RGE data
-  if (arg_save)
+  // save RGE to pass to ELVAS
+  if (arg_save == 1)
   {
     arg_ofs << scientific << setprecision(7);
 
@@ -117,8 +127,12 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
     // RGE flow
     for (int i = 0; i <= npts; ++i)
     {
-      // {Q, g2, g1, yt, yb, lambda}
-      arg_ofs << vec_mu[i] << "\t" << vec_g2[i] << "\t" << vec_g1[i] << "\t" << vec_yt[i] << "\t" << vec_yb[i] << "\t" << vec_lambda[i] << endl;
+      arg_ofs << vec_mu[i] << "\t"
+              << vec_g2[i] << "\t"
+              << vec_g1[i] << "\t"
+              << vec_yt[i] << "\t"
+              << vec_yb[i] << "\t"
+              << vec_lambda[i] << endl;
     }
 
     // ELVAS input footer
@@ -131,6 +145,47 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
     // {
     //   ofs2 << exp(itr->first) << "\t" << itr->second << endl;
     // }
+  }
+
+  // save full RGE data
+  if (arg_save == 2)
+  {
+    arg_ofs << scientific << setprecision(7);
+
+    // RGE header
+    arg_ofs << "mu\t"
+            << "g3\t"
+            << "g2\t"
+            << "g1\t"
+            << "yt\t"
+            << "yb\t"
+            << "yc\t"
+            << "ys\t"
+            << "yu\t"
+            << "yd\t"
+            << "ytau\t"
+            << "ymu\t"
+            << "ye\t"
+            << "lambda" << endl;
+
+    // RGE flow
+    for (int i = 0; i <= npts; ++i)
+    {
+      arg_ofs << vec_mu[i] << "\t"
+              << vec_g3[i] << "\t"
+              << vec_g2[i] << "\t"
+              << vec_g1[i] << "\t"
+              << vec_yt[i] << "\t"
+              << vec_yb[i] << "\t"
+              << vec_yc[i] << "\t"
+              << vec_ys[i] << "\t"
+              << vec_yu[i] << "\t"
+              << vec_yd[i] << "\t"
+              << vec_ytau[i] << "\t"
+              << vec_ymu[i] << "\t"
+              << vec_ye[i] << "\t"
+              << vec_lambda[i] << endl;
+    }
   }
 
   // absolute stability
@@ -200,11 +255,17 @@ double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, doubl
 double calcLog10gamma(double arg_alphas, double arg_mtpole, double arg_mw, double arg_mh)
 {
   ofstream ofs_tmp("tmp");
-  return calcLog10gamma(arg_alphas, arg_mtpole, arg_mw, arg_mh, ofs_tmp, false);
+  return calcLog10gamma(arg_alphas, arg_mtpole, arg_mw, arg_mh, ofs_tmp, 0);
 }
 
 int main(int argc, char **argv)
 {
+  // full RGE data output for debug 2024.4
+  ofstream ofs_RGE("output/" + string(DATE_LABEL) + "_RGE.dat");
+  calcLog10gamma(ALPHAS, MTPOLE, MW, MH, ofs_RGE, 2);
+  ofstream ofs_RGE_twoloop("output/" + string(DATE_LABEL) + "_RGE_twoloop.dat");
+  calcLog10gamma(ALPHAS, MTPOLE, MW, MH, ofs_RGE_twoloop, 2, false);
+
   // current value and error bars
   ofstream ofs_center_ELVAS("output/" + string(DATE_LABEL) + "_center_ELVAS_input.dat");
   double center = calcLog10gamma(ALPHAS, MTPOLE, MW, MH, ofs_center_ELVAS);
